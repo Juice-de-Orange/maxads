@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}API — MaxAds{% endblock %}
+{% block body %}
+<div class="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+
+  <header class="card card-loud p-5 flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-4">
+      <div class="text-5xl">🔌</div>
+      <div>
+        <h1 class="wordmark-plain text-3xl">MaxAds API</h1>
+        <p class="font-bold text-sm mt-1" style="color:var(--ink-soft)">
+          Every way to get your ads out there.
+        </p>
+      </div>
+    </div>
+    <a href="/" class="btn btn-quiet px-4 py-2 text-sm">← Dashboard</a>
+  </header>
+
+  <div class="card p-4" style="background:var(--sun)">
+    <p class="font-bold text-sm">
+      Everything here is <strong>public</strong> and served with <code>Access-Control-Allow-Origin: *</code>
+      — it works on any foreign page, no key, no login.
+      Anywhere a slug goes, <code>random</code> works too and picks a rotating ad.
+    </p>
+  </div>
+
+  <!-- Ways to embed -->
+  <section class="space-y-4">
+    <h2 class="text-2xl font-black">Five ways to embed</h2>
+
+    {% set ways = [
+      ("1", "Script", "The recommended way. Creates a responsive container, reserves the aspect ratio (no layout jump) and only counts once the banner was actually visible.",
+       '<script src="' ~ base ~ '/embed/' ~ example ~ '.js" async></script>', "var(--pop)"),
+      ("2", "Script with options", "Three parameters: width (max. width in px), align (left/center/right), radius (corners in px).",
+       '<script src="' ~ base ~ '/embed/' ~ example ~ '.js?width=300&align=left&radius=12" async></script>', "var(--sky)"),
+      ("3", "iframe", "Fully sandboxed. Good when the host page allows no third-party JavaScript.",
+       '<iframe src="' ~ base ~ '/frame/' ~ example ~ '" style="width:100%;aspect-ratio:16/9;border:0" loading="lazy" scrolling="no"></iframe>', "var(--lime)"),
+      ("4", "Just an image", "No JavaScript, no iframe — works in forums, newsletters and anywhere scripts get stripped. The request itself counts as the impression.",
+       '<a href="' ~ base ~ '/c/' ~ example ~ '"><img src="' ~ base ~ '/img/' ~ example ~ '" alt="Advertisement"></a>', "var(--violet)"),
+      ("5", "JSON", "For your own integrations: you get the raw data and build the display yourself.",
+       'fetch("' ~ base ~ '/api/ad/random").then(r => r.json())', "var(--sun)"),
+    ] %}
+
+    {% for number, name, text, code, colour in ways %}
+    <div class="card p-5" style="box-shadow:6px 6px 0 {{ colour }}">
+      <div class="flex items-baseline gap-3 mb-2">
+        <span class="badge text-lg" style="background:{{ colour }}">{{ number }}</span>
+        <h3 class="text-xl font-black">{{ name }}</h3>
+      </div>
+      <p class="text-sm font-semibold mb-3" style="color:var(--ink-soft)">{{ text }}</p>
+      <input readonly value='{{ code }}' class="field mono text-xs" onclick="this.select()">
+    </div>
+    {% endfor %}
+  </section>
+
+  <!-- Endpoints -->
+  <section class="card p-5">
+    <h2 class="text-2xl font-black mb-3">All endpoints</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left border-b-[3px]" style="border-color:var(--ink)">
+            <th class="pb-2 font-black uppercase text-xs tracking-wider">Path</th>
+            <th class="pb-2 font-black uppercase text-xs tracking-wider">Returns</th>
+          </tr>
+        </thead>
+        <tbody class="align-top">
+          {% set paths = [
+            ("GET /embed/&lt;slug&gt;.js", "The embed snippet. Parameters: width, align, radius"),
+            ("GET /embed/random.js", "The same, but a different banner every time"),
+            ("GET /frame/&lt;slug&gt;", "A ready HTML page for the iframe"),
+            ("GET /img/&lt;slug&gt;", "The image itself — and counts the impression on the way"),
+            ("GET /m/&lt;slug&gt;", "The media file (WebP or MP4), not counted. ?thumb=1 for the preview"),
+            ("GET /c/&lt;slug&gt;", "Counts the click and redirects to the target URL"),
+            ("GET /api/ad/&lt;slug&gt;", "JSON for one banner — dimensions, every URL"),
+            ("GET /api/ads", "JSON: every banner currently in rotation"),
+            ("POST /api/impression", "Report an impression (body = the slug). Used by the snippet itself"),
+            ("GET /healthz", "OK when data disk, ffmpeg and database are fine — otherwise 503 with the reason"),
+          ] %}
+          {% for path, what in paths %}
+          <tr class="border-b" style="border-color:#e7e1d3">
+            <td class="py-2 mono font-bold whitespace-nowrap pr-4">{{ path|safe }}</td>
+            <td class="py-2 font-semibold" style="color:var(--ink-soft)">{{ what }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card p-5">
+    <h2 class="text-xl font-black mb-2">🔎 What is counted — and what is not</h2>
+    <ul class="text-sm font-semibold space-y-2" style="color:var(--ink-soft)">
+      <li><strong style="color:var(--ink)">Impressions</strong> are counted <em>once</em> per visitor,
+        banner and day. A reload does not inflate the number.</li>
+      <li><strong style="color:var(--ink)">Sites</strong>, on the other hand, are recorded on
+        <em>every</em> request — otherwise every page a returning visitor sees would be missing.</li>
+      <li><strong style="color:var(--ink)">No IP addresses.</strong> Visitors are told apart by a hash of
+        IP, user agent, the date and a secret. The next day the same visitor can no longer
+        be recognised.</li>
+    </ul>
+  </section>
+
+  <p class="text-center text-xs font-bold pb-4" style="color:var(--ink-soft)">
+    Questions? It is all in the repo. 📦
+  </p>
+</div>
+{% endblock %}

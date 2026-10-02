@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ ad.title }}</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:transparent;overflow:hidden}
+  a,.wrap{display:block;width:100%;height:100%}
+  img,video{display:block;width:100%;height:100%;object-fit:contain;border:0}
+</style>
+</head>
+<body>
+{% if ad.target_url %}<a href="{{ base }}/c/{{ ad.slug }}" target="_blank" rel="noopener sponsored">{% else %}<div class="wrap">{% endif %}
+  {% if ad.kind == "image" %}
+    <img src="{{ base }}/m/{{ ad.slug }}" alt="{{ ad.title }}">
+  {% else %}
+    <video src="{{ base }}/m/{{ ad.slug }}" autoplay muted loop playsinline preload="metadata"></video>
+  {% endif %}
+{% if ad.target_url %}</a>{% else %}</div>{% endif %}
+<script>
+  (function(){
+    var u="{{ base }}/api/impression", s="{{ ad.slug }}";
+    if(navigator.sendBeacon){navigator.sendBeacon(u,s);}
+    else{var x=new XMLHttpRequest();x.open("POST",u,true);x.send(s);}
+  })();
+</script>
+</body>
+</html>

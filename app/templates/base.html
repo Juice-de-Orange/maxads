@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}MaxAds{% endblock %}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📣</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    /* Advertising neon: loud but legible. UI only -- data fills below. */
+    --ink:      #17123a;
+    --ink-soft:#4b4370;
+    --paper:     #fff9ec;
+    --card:      #ffffff;
+    --pop:      #ff2e88;   /* pink   -- primary action */
+    --sun:      #ffcc00;   /* yellow -- highlight */
+    --sky:     #00c2ff;   /* cyan   -- secondary action */
+    --lime:    #22dd88;   /* green  -- active */
+    --violet:       #7c3aed;
+    /* Data fills: validated slots (dataviz) against the light card surface */
+    --data-1:    #2a78d6;   /* originals */
+    --data-2:    #eb6834;   /* delivered */
+    --data-3:    #1baf7a;   /* other     */
+    --data-free: #e7e1d3;   /* free = neutral, not a series colour */
+  }
+  body{
+    background:
+      radial-gradient(circle at 12% 8%,  rgba(255,204,0,.30), transparent 42%),
+      radial-gradient(circle at 88% 4%,  rgba(255,46,136,.22), transparent 40%),
+      radial-gradient(circle at 50% 100%,rgba(0,194,255,.20), transparent 45%),
+      var(--paper);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: ui-rounded,"Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+  }
+  .card{
+    background: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .card-loud{ box-shadow: 6px 6px 0 var(--pop); }
+  .btn{
+    border: 3px solid var(--ink); border-radius: 12px;
+    box-shadow: 3px 3px 0 var(--ink);
+    font-weight: 800; transition: transform .08s, box-shadow .08s;
+  }
+  .btn:hover{ transform: translate(1px,1px); box-shadow: 2px 2px 0 var(--ink); }
+  .btn:active{ transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+  .btn-main{ background: var(--pop); color:#fff; }
+  .btn-alt{ background: var(--sky); color: var(--ink); }
+  .btn-quiet{ background:#fff; color: var(--ink); }
+  .field{
+    border:3px solid var(--ink); border-radius:12px; background:#fff;
+    padding:.55rem .8rem; width:100%; font-weight:600;
+  }
+  .field:focus{ outline:none; box-shadow: 3px 3px 0 var(--sun); }
+  .badge{
+    display:inline-block; font-weight:900; letter-spacing:.02em;
+    border:3px solid var(--ink); border-radius:999px; padding:.1rem .7rem;
+  }
+  .wordmark{
+    font-weight:900; letter-spacing:-.03em; line-height:1;
+    text-shadow: 3px 3px 0 var(--sun), 6px 6px 0 var(--pop);
+  }
+  /* Two offset shadows read like doubled text on longer titles. */
+  .wordmark-plain{
+    font-weight:900; letter-spacing:-.03em; line-height:1;
+    text-shadow: 3px 3px 0 var(--sun);
+  }
+  .tilt{ transform: rotate(-1.4deg); }
+  .tilt-back{ transform: rotate(1deg); }
+  /* A market-stall ticker; stands still for anyone who prefers that. */
+  .ticker{ overflow:hidden; white-space:nowrap; }
+  .ticker > span{ display:inline-block; padding-left:100%; animation: ticker-run 22s linear infinite; }
+  @keyframes ticker-run{ to{ transform: translateX(-100%);} }
+  @media (prefers-reduced-motion: reduce){
+    .ticker > span{ animation:none; padding-left:0; }
+    .btn{ transition:none; }
+  }
+  code, .mono{ font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+</style>
+</head>
+<body class="h-full">
+{% block body %}{% endblock %}
+</body>
+</html>

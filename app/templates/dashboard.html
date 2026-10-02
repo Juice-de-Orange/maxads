@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — MaxAds{% endblock %}
+{% block body %}
+<div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+
+  <header class="card card-loud p-5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="text-5xl">📣</div>
+      <div>
+        <h1 class="wordmark text-4xl">MaxAds</h1>
+        <p class="font-bold text-sm mt-1" style="color:var(--ink-soft)">
+          Hey <strong>{{ user.username }}</strong> · {{ metrics.ads_active }} of {{ metrics.ads_total }} banners on air
+        </p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <a href="/api" class="btn btn-alt px-4 py-2 text-sm">🔌 API</a>
+      <a href="/password" class="btn btn-quiet px-4 py-2 text-sm">🔑 Password</a>
+      <a href="/logout" class="btn btn-quiet px-4 py-2 text-sm">Bye!</a>
+    </div>
+  </header>
+
+  <div class="ticker card py-2 text-sm font-black" style="background:var(--sun)">
+    <span>📺 BRAND NEW! · {{ metrics.impressions }} impressions · {{ metrics.clicks }} clicks · {{ metrics.sites }} site{{ '' if metrics.sites == 1 else 's' }} on board · UNBELIEVABLE! · Today only! · And tomorrow too! · 📣</span>
+  </div>
+
+  <!-- ══ Metrics ═════════════════════════════════════════════════ -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {% set tiles = [
+      ("👀", "Impressions",   metrics.impressions, "var(--sky)"),
+      ("👆", "Clicks",        metrics.clicks,      "var(--pop)"),
+      ("🌐", "Sites",         metrics.sites,       "var(--lime)"),
+    ] %}
+    {% for symbol, name, value, colour in tiles %}
+    <div class="card p-4" style="box-shadow:6px 6px 0 {{ colour }}">
+      <div class="text-3xl">{{ symbol }}</div>
+      <div class="text-4xl font-black tabular-nums mt-1">{{ "{:,}".format(value) }}</div>
+      <div class="text-xs font-black uppercase tracking-wider mt-1" style="color:var(--ink-soft)">{{ name }}</div>
+    </div>
+    {% endfor %}
+    <div class="card p-4" style="box-shadow:6px 6px 0 var(--violet)">
+      <div class="text-3xl">🎯</div>
+      <div class="text-4xl font-black tabular-nums mt-1">{{ metrics.ctr }}&thinsp;%</div>
+      <div class="text-xs font-black uppercase tracking-wider mt-1" style="color:var(--ink-soft)">Click rate</div>
+    </div>
+  </section>
+
+  <!-- ══ Storage ═════════════════════════════════════════════════ -->
+  <section class="card p-5">
+    <div class="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+      <h2 class="text-xl font-black">💾 Space on the data disk</h2>
+      <p class="font-bold text-sm" style="color:var(--ink-soft)">
+        <strong style="color:var(--ink)">{{ storage.free_h }}</strong> free of {{ storage.total_h }}
+        · used {{ storage.used_h }} ({{ storage.used_pct }}&thinsp;%)
+      </p>
+    </div>
+
+    <!-- Stacked bar: 2px gaps separate the fills, every piece is labelled -->
+    <div class="mt-3 flex h-9 rounded-xl overflow-hidden border-[3px]" style="border-color:var(--ink);gap:2px;background:var(--ink)">
+      {% for s in storage.segments %}
+        {% if s.pct > 0 %}
+        <div style="width:{{ s.pct }}%;background:var(--data-{{ loop.index }});min-width:3px" title="{{ s.label }}: {{ s.h }}"></div>
+        {% endif %}
+      {% endfor %}
+      <div style="flex:1 1 auto;background:var(--data-free)" title="free: {{ storage.free_h }}"></div>
+    </div>
+
+    <!-- Direct labels: the palette validator asks for visible labels on the low-contrast fill -->
+    <ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-bold">
+      {% for s in storage.segments %}
+      <li class="flex items-center gap-2">
+        <span class="inline-block w-4 h-4 rounded border-2" style="background:var(--data-{{ loop.index }});border-color:var(--ink)"></span>
+        {{ s.label }} <span class="tabular-nums" style="color:var(--ink-soft)">{{ s.h }}</span>
+      </li>
+      {% endfor %}
+      <li class="flex items-center gap-2">
+        <span class="inline-block w-4 h-4 rounded border-2" style="background:var(--data-free);border-color:var(--ink)"></span>
+        Free <span class="tabular-nums" style="color:var(--ink-soft)">{{ storage.free_h }}</span>
+      </li>
+    </ul>
+    <p class="text-xs mt-2 font-semibold" style="color:var(--ink-soft)">
+      "Other" holds the database ({{ storage.db_h }}), logs ({{ storage.logs_h }}) and everything
+      else on the disk — the number comes from the filesystem, not from our own sum.
+    </p>
+  </section>
+
+  <!-- ══ Who runs our ads? ═══════════════════════════════════════ -->
+  {% if metrics.top_sites %}
+  <section class="card p-5">
+    <h2 class="text-xl font-black mb-3">🌐 These sites run your ads</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left border-b-[3px]" style="border-color:var(--ink)">
+            <th class="pb-2 font-black uppercase text-xs tracking-wider">Site</th>
+            <th class="pb-2 font-black uppercase text-xs tracking-wider text-right">Deliveries</th>
+            <th class="pb-2 font-black uppercase text-xs tracking-wider text-right">Clicks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in metrics.top_sites %}
+          <tr class="border-b" style="border-color:#e7e1d3">
+            <td class="py-2 font-bold mono">{{ s.domain }}</td>
+            <td class="py-2 text-right tabular-nums font-bold">{{ s.hits }}</td>
+            <td class="py-2 text-right tabular-nums font-bold">{{ s.clicks }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ══ Upload ══════════════════════════════════════════════════ -->
+  <section class="card p-5 tilt-back">
+    <h2 class="text-xl font-black mb-3">📤 Throw in a new banner</h2>
+    <form method="post" action="/ads" enctype="multipart/form-data" class="grid sm:grid-cols-4 gap-3 items-end">
+      <label class="block">
+        <span class="text-xs font-black uppercase tracking-wider">Title</span>
+        <input name="title" required placeholder="e.g. Buy more stuff" class="field mt-1">
+      </label>
+      <label class="block">
+        <span class="text-xs font-black uppercase tracking-wider">Target URL</span>
+        <input name="target_url" type="url" placeholder="https://…" class="field mt-1">
+      </label>
+      <label class="block">
+        <span class="text-xs font-black uppercase tracking-wider">File</span>
+        <input name="file" type="file" required accept="image/*,video/*"
+               class="mt-1 w-full text-sm font-bold file:mr-2 file:btn file:btn-alt file:px-3 file:py-2 file:text-sm file:border-[3px]">
+      </label>
+      <button class="btn btn-main py-3">Upload! 🎉</button>
+    </form>
+    <p class="text-xs mt-2 font-semibold" style="color:var(--ink-soft)">
+      Images (PNG, JPG, GIF, WebP) → WebP · videos (MP4, MOV, WebM) → H.264/AAC.
+      Runs in the background, GIFs stay animated.
+    </p>
+  </section>
+
+  <!-- ══ Random ad ═══════════════════════════════════════════════ -->
+  <section class="card p-5" style="box-shadow:6px 6px 0 var(--sky)">
+    <h2 class="text-xl font-black mb-1">🎲 Random ad</h2>
+    <p class="text-sm font-semibold mb-3" style="color:var(--ink-soft)">
+      Shows a different active banner on every load. Embed once, enjoy forever.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <input readonly value='<script src="{{ public_url }}/embed/random.js" async></script>'
+             class="field mono text-xs flex-1" onclick="this.select()">
+      <button type="button" class="btn btn-alt px-4 py-2 text-sm whitespace-nowrap"
+              onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied! ✅'">
+        Copy
+      </button>
+    </div>
+  </section>
+
+  <!-- ══ Banners ═════════════════════════════════════════════════ -->
+  <section class="space-y-4">
+    <h2 class="text-2xl font-black">🖼️ Your banners</h2>
+    {% if not ads %}
+      <p class="card p-6 font-bold text-center">
+        Nothing here yet. Upload something above — the world is waiting for your ads. 📭
+      </p>
+    {% endif %}
+
+    {% for ad in ads %}
+    <article class="card p-4 grid md:grid-cols-[190px_1fr] gap-4">
+      <div class="rounded-xl overflow-hidden border-[3px] flex items-center justify-center min-h-[110px]"
+           style="border-color:var(--ink);background:var(--paper)">
+        {% if ad.status == 'ready' %}
+          <img src="/m/{{ ad.slug }}?thumb=1" alt="" class="max-h-32 w-auto">
+        {% elif ad.status == 'failed' %}
+          <span class="text-xs font-black p-3 text-center" style="color:var(--pop)">💥 Failed</span>
+        {% else %}
+          <span class="text-xs font-black p-3 text-center">⏳ in the oven…</span>
+        {% endif %}
+      </div>
+
+      <div class="space-y-2 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="text-lg font-black">{{ ad.title }}</h3>
+          <span class="badge text-xs"
+                style="background:{{ 'var(--lime)' if ad.active else '#e7e1d3' }}">
+            {{ 'on air' if ad.active else 'paused' }}
+          </span>
+          <span class="text-xs font-bold" style="color:var(--ink-soft)">
+            {{ ad.kind }}{% if ad.width %} · {{ ad.width }}×{{ ad.height }}{% endif %}
+          </span>
+        </div>
+
+        <p class="text-sm font-bold">
+          👀 {{ ad.impressions }} · 👆 {{ ad.clicks }}
+          {% if ad.impressions %}<span style="color:var(--ink-soft)">({{ '%.1f'|format(ad.clicks / ad.impressions * 100) }}&thinsp;% click rate)</span>{% endif %}
+          {% if ad.sites %}<span style="color:var(--ink-soft)">· 🌐 {{ ad.sites|length }} site{{ '' if ad.sites|length == 1 else 's' }}</span>{% endif %}
+        </p>
+
+        {% if ad.target_url %}
+        <p class="text-sm truncate">
+          → <a href="{{ ad.target_url }}" target="_blank" rel="noopener" class="font-bold underline" style="color:var(--violet)">{{ ad.target_url }}</a>
+        </p>
+        {% endif %}
+
+        {% if ad.error %}
+        <p class="text-xs font-bold text-white px-2 py-1 rounded-lg" style="background:var(--pop)">{{ ad.error }}</p>
+        {% endif %}
+
+        {% if ad.sites %}
+        <details class="text-sm">
+          <summary class="cursor-pointer font-black select-none">🌐 On which sites?</summary>
+          <ul class="mt-2 space-y-1">
+            {% for s in ad.sites %}
+            <li class="flex justify-between gap-3 border-b pb-1" style="border-color:#e7e1d3">
+              <span class="mono font-bold truncate">{{ s.domain }}</span>
+              <span class="tabular-nums whitespace-nowrap" style="color:var(--ink-soft)">{{ s.hits }}× · {{ s.clicks }} clicks</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+
+        {% if ad.status == 'ready' %}
+        <details class="text-sm">
+          <summary class="cursor-pointer font-black select-none">📋 Embed code — {{ 5 if ad.kind == 'image' else 4 }} ways</summary>
+          <div class="mt-2 space-y-3">
+            {% set ways = [
+              ("Script (recommended)", '<script src="' ~ public_url ~ '/embed/' ~ ad.slug ~ '.js" async></script>'),
+              ("Script, limited width", '<script src="' ~ public_url ~ '/embed/' ~ ad.slug ~ '.js?width=300&align=left&radius=12" async></script>'),
+              ("iframe", '<iframe src="' ~ public_url ~ '/frame/' ~ ad.slug ~ '" style="width:100%;max-width:' ~ ad.width ~ 'px;aspect-ratio:' ~ ad.width ~ '/' ~ ad.height ~ ';border:0" loading="lazy" scrolling="no"></iframe>'),
+              ("JSON for your own integration", public_url ~ '/api/ad/' ~ ad.slug),
+            ] %}
+            {% for name, code in ways %}
+            <div>
+              <p class="text-xs font-black uppercase tracking-wider mb-1">{{ name }}</p>
+              <input readonly value='{{ code }}' class="field mono text-xs" onclick="this.select()">
+            </div>
+            {% endfor %}
+            {% if ad.kind == 'image' %}
+            <div>
+              <p class="text-xs font-black uppercase tracking-wider mb-1">Just an image — no JavaScript at all</p>
+              <input readonly value='<a href="{{ public_url }}/c/{{ ad.slug }}"><img src="{{ public_url }}/img/{{ ad.slug }}" alt="{{ ad.title }}" style="max-width:100%;height:auto"></a>'
+                     class="field mono text-xs" onclick="this.select()">
+            </div>
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+
+        <div class="flex gap-2 pt-1">
+          <form method="post" action="/ads/{{ ad.slug }}/toggle">
+            <button class="btn btn-quiet px-3 py-1.5 text-sm">
+              {{ '⏸ Pause' if ad.active else '▶ Go' }}
+            </button>
+          </form>
+          <form method="post" action="/ads/{{ ad.slug }}/delete"
+                onsubmit="return confirm('Really bin the banner “{{ ad.title }}”?')">
+            <button class="btn px-3 py-1.5 text-sm" style="background:var(--pop);color:#fff">🗑 Delete</button>
+          </form>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+
+  <!-- ══ Team ════════════════════════════════════════════════════ -->
+  <section class="card p-5">
+    <h2 class="text-xl font-black mb-1">🧑‍🤝‍🧑 The ad crew</h2>
+    <p class="text-sm font-semibold mb-3" style="color:var(--ink-soft)">Every member can do everything. Trust is a beautiful thing.</p>
+    <ul class="flex flex-wrap gap-2 mb-4">
+      {% for u in users %}
+      <li class="badge text-sm" style="background:var(--sun)">{{ u.username }}</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/users" class="grid sm:grid-cols-3 gap-3 items-end">
+      <label class="block">
+        <span class="text-xs font-black uppercase tracking-wider">Username</span>
+        <input name="username" required class="field mt-1">
+      </label>
+      <label class="block">
+        <span class="text-xs font-black uppercase tracking-wider">Password (min. 10)</span>
+        <input name="password" type="password" minlength="10" required class="field mt-1">
+      </label>
+      <button class="btn btn-alt py-3">Bring them in 🎪</button>
+    </form>
+  </section>
+
+  <p class="text-center text-xs font-bold pb-4" style="color:var(--ink-soft)">
+    MaxAds — self-hosted banners, counted without tracking. 📦
+  </p>
+</div>
+{% endblock %}
