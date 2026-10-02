@@ -1,0 +1,49 @@
+# Template -- adjust the paths marked below, then install to /etc/systemd/system/.
+# See docs/deploy/systemd.md.
+[Unit]
+Description=MaxAds media worker (image and video optimisation)
+Documentation=https://github.com/Juice-de-Orange/maxads
+After=maxads.service
+RequiresMountsFor=/srv/maxads
+
+[Service]
+Type=exec
+User=maxads
+Group=maxads
+WorkingDirectory=/opt/maxads
+Environment=PYTHONUNBUFFERED=1
+Environment=MAXADS_BASE=/srv/maxads
+EnvironmentFile=-/etc/maxads.env
+ExecStartPre=/usr/bin/test -f /srv/maxads/.mounted
+ExecStart=/opt/maxads/venv/bin/python -m app.worker
+Restart=on-failure
+RestartSec=5
+# Transcoding must never starve the web service.
+Nice=10
+IOSchedulingClass=idle
+# The worker sleeps most of the time; when it works it may compute for a
+# while, but it queues behind everything else.
+CPUWeight=20
+IOWeight=20
+
+
+# ── Frugality ─────────────────────────────────────────────────────────────
+# Same runtime directory as the web unit: the wake-up pipe lives in RAM.
+RuntimeDirectory=maxads
+RuntimeDirectoryMode=0750
+# See maxads.service: without this the FIFO disappears when one unit stops.
+RuntimeDirectoryPreserve=yes
+
+# ffmpeg needs room for large videos -- the limit is deliberately generous.
+MemoryMax=1G
+TasksMax=64
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/maxads
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,58 @@
+# Template -- adjust the paths marked below, then install to /etc/systemd/system/.
+# See docs/deploy/systemd.md.
+[Unit]
+Description=MaxAds web service
+Documentation=https://github.com/Juice-de-Orange/maxads
+After=network-online.target
+Wants=network-online.target
+# The data directory (MAXADS_BASE). If it is a separate disk, systemd waits for it.
+RequiresMountsFor=/srv/maxads
+
+[Service]
+Type=exec
+User=maxads
+Group=maxads
+WorkingDirectory=/opt/maxads
+Environment=PYTHONUNBUFFERED=1
+Environment=MAXADS_BASE=/srv/maxads
+EnvironmentFile=-/etc/maxads.env
+# Refuse to start when the data disk is gone. Without this the service would
+# happily write into an empty directory on the system disk and lose every upload.
+ExecStartPre=/usr/bin/test -f /srv/maxads/.mounted
+# --no-access-log: the reverse proxy already logs every request. A second line
+# per banner request only costs writes and says nothing new.
+ExecStart=/opt/maxads/venv/bin/uvicorn app.main:create_app --factory \
+          --host 127.0.0.1 --port 8080 --proxy-headers --forwarded-allow-ips='127.0.0.1' \
+          --no-access-log --timeout-keep-alive 15
+Restart=on-failure
+RestartSec=5
+
+
+# ── Frugality ─────────────────────────────────────────────────────────────
+# RuntimeDirectory creates /run/maxads as a tmpfs directory (owned by maxads).
+# The wake-up pipe between web and worker lives there -- in RAM, not on disk.
+RuntimeDirectory=maxads
+RuntimeDirectoryMode=0750
+# Without this systemd removes /run/maxads as soon as ONE of the two units
+# stops -- the worker would then hold a descriptor to a deleted FIFO and never
+# be woken again. The fallback timer hides that, so it only shows when an
+# upload hangs for five minutes.
+RuntimeDirectoryPreserve=yes
+
+# Upper limits so that a bug cannot take the host down. They should never
+# apply in normal operation -- measured, the service sits at about 40 MB.
+MemoryMax=384M
+MemoryHigh=256M
+TasksMax=64
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/maxads
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

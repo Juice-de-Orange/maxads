@@ -1,0 +1,39 @@
+# Quick start: cp .env.example .env && docker compose up -d
+# Then open http://localhost:8080 and log in as "admin" (see README).
+services:
+  web:
+    build: .
+    image: maxads:local
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - data:/data
+      - runtime:/run/maxads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  worker:
+    image: maxads:local
+    command: ["python", "-m", "app.worker"]
+    env_file: .env
+    depends_on:
+      - web
+    volumes:
+      - data:/data
+      - runtime:/run/maxads
+    restart: unless-stopped
+
+volumes:
+  data:
+  # Shared tmpfs for the wake-up pipe: an upload in `web` wakes `worker` at once
+  # instead of waiting for the five-minute fallback timer.
+  runtime:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "uid=1000,gid=1000,mode=0750"
