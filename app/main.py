@@ -254,8 +254,10 @@ def register_routes(app: FastAPI) -> None:
 
     # ---------------- dashboard ----------------
 
-    @app.get("/", response_class=HTMLResponse)
-    def dashboard(request: Request, user: dict = Depends(require_user)):
+    def render_dashboard(request: Request, user: dict, error: str | None = None,
+                         status_code: int = 200) -> HTMLResponse:
+        """The dashboard page. A form error comes back on the same page, with the form's
+        status code, instead of a bare JSON body the browser shows with no way back."""
         with db.session() as conn:
             ads = conn.execute("SELECT * FROM ads ORDER BY id DESC").fetchall()
             items = []
@@ -271,8 +273,12 @@ def register_routes(app: FastAPI) -> None:
             metrics = stats.metrics(conn)
         return templates.TemplateResponse(request, "dashboard.html", {
             "user": user, "ads": items, "users": users, "public_url": config.PUBLIC_URL,
-            "metrics": metrics, "storage": stats.storage(),
-        })
+            "metrics": metrics, "storage": stats.storage(), "error": error,
+        }, status_code=status_code)
+
+    @app.get("/", response_class=HTMLResponse)
+    def dashboard(request: Request, user: dict = Depends(require_user)):
+        return render_dashboard(request, user)
 
     @app.post("/ads")
     async def upload(request: Request, title: str = Form(...),
@@ -281,7 +287,7 @@ def register_routes(app: FastAPI) -> None:
         suffix = Path(file.filename or "").suffix.lower()
         kind = media.kind_for(suffix)
         if kind is None:
-            raise HTTPException(400, f"File type {suffix or '?'} is not supported.")
+            return render_dashboard(request, user, f"File type {suffix or '?'} is not supported.", 400)
 
         slug = secrets.token_hex(6)
         raw_path = config.RAW_DIR / f"{slug}{suffix}"
@@ -293,7 +299,7 @@ def register_routes(app: FastAPI) -> None:
                 if size > config.MAX_UPLOAD_BYTES:
                     out.close()
                     raw_path.unlink(missing_ok=True)
-                    raise HTTPException(413, "File is too large.")
+                    return render_dashboard(request, user, "File is too large.", 413)
                 out.write(chunk)
 
         with db.session() as conn:
@@ -331,13 +337,13 @@ def register_routes(app: FastAPI) -> None:
     def add_user(request: Request, username: str = Form(...), password: str = Form(...),
                  user: dict = Depends(require_user)):
         if len(password) < 10:
-            raise HTTPException(400, "The password needs at least 10 characters.")
+            return render_dashboard(request, user, "The password needs at least 10 characters.", 400)
         with db.session() as conn:
             exists = conn.execute(
                 "SELECT 1 FROM users WHERE username = ?", (username.strip(),)
             ).fetchone()
             if exists:
-                raise HTTPException(409, "That username is already taken.")
+                return render_dashboard(request, user, "That username is already taken.", 409)
             auth.create_user(conn, username, password, created_by=user["id"])
         log.info("user %r created by %s", username, user["username"])
         return RedirectResponse("/", status_code=303)

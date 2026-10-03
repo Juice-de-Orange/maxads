@@ -20,6 +20,10 @@
     </div>
   </header>
 
+  {% if error %}
+  <p role="alert" class="card p-4 font-black text-white" style="background:var(--pop)">{{ error }}</p>
+  {% endif %}
+
   <div class="ticker card py-2 text-sm font-black" style="background:var(--sun)">
     <span>📺 BRAND NEW! · {{ metrics.impressions }} impressions · {{ metrics.clicks }} clicks · {{ metrics.sites }} site{{ '' if metrics.sites == 1 else 's' }} on board · UNBELIEVABLE! · Today only! · And tomorrow too! · 📣</span>
   </div>
