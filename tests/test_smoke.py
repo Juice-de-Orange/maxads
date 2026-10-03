@@ -354,3 +354,20 @@ def test_a_click_on_an_ad_without_a_target_is_not_counted(admin_client, app_env)
     with db.session() as conn:
         n = conn.execute("SELECT COUNT(*) AS n FROM events WHERE kind='click'").fetchone()["n"]
     assert n == 0
+
+
+def test_form_errors_come_back_on_the_dashboard(admin_client):
+    """Unsupported file, short password, duplicate user: the dashboard again with the message,
+    not a bare JSON body."""
+    r = admin_client.post("/ads", data={"title": "x"},
+                          files={"file": ("evil.exe", b"MZ", "application/octet-stream")})
+    assert r.status_code == 400
+    assert "text/html" in r.headers["content-type"]
+    assert 'role="alert"' in r.text and "File type .exe is not supported." in r.text
+
+    r = admin_client.post("/users", data={"username": "short", "password": "123"})
+    assert r.status_code == 400 and "at least 10 characters" in r.text
+
+    admin_client.post("/users", data={"username": "dup", "password": "long enough pw"})
+    r = admin_client.post("/users", data={"username": "dup", "password": "long enough pw"})
+    assert r.status_code == 409 and "already taken" in r.text
