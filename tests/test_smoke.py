@@ -314,3 +314,43 @@ def test_delivered_video_is_always_browser_decodable(app_env, tmp_path):
         "-show_entries", "stream=pix_fmt", "-of", "csv=p=0", str(result.media_path),
     ], capture_output=True, text=True, check=True).stdout.strip()
     assert out in media.BROWSER_PIXEL_FORMATS, f"delivered pix_fmt {out!r} is not decodable"
+
+
+def test_a_title_cannot_break_out_of_the_delete_confirmation(admin_client, app_env):
+    """The title used to sit inside a JavaScript string in `onsubmit`. HTML escaping does not
+    protect that: an apostrophe ended the string (no dialog, banner deleted on one click) and
+    anything after it ran as script."""
+    from PIL import Image
+
+    src = Path(app_env) / "x.png"
+    Image.new("RGB", (300, 100), (0, 0, 0)).save(src)
+    title = "y'+(window.__xss=1)+'"
+    with src.open("rb") as fh:
+        admin_client.post("/ads", data={"title": title, "target_url": ""},
+                          files={"file": ("x.png", fh, "image/png")})
+
+    page = admin_client.get("/").text
+    handler = page.split('onsubmit="', 1)[1].split('"', 1)[0]
+    assert "__xss" not in handler
+    assert "this.dataset.title" in handler
+    assert 'data-title="y&#39;+(window.__xss=1)+&#39;"' in page
+
+
+def test_a_click_on_an_ad_without_a_target_is_not_counted(admin_client, app_env):
+    from app import db
+    from app.worker import claim_job, process
+    from PIL import Image
+
+    src = Path(app_env) / "n.png"
+    Image.new("RGB", (300, 100), (0, 0, 0)).save(src)
+    with src.open("rb") as fh:
+        admin_client.post("/ads", data={"title": "No target", "target_url": ""},
+                          files={"file": ("n.png", fh, "image/png")})
+    with db.session() as conn:
+        process(conn, claim_job(conn))
+        slug = conn.execute("SELECT slug FROM ads").fetchone()["slug"]
+
+    assert admin_client.get(f"/c/{slug}", follow_redirects=False).status_code == 404
+    with db.session() as conn:
+        n = conn.execute("SELECT COUNT(*) AS n FROM events WHERE kind='click'").fetchone()["n"]
+    assert n == 0

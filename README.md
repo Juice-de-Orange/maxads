@@ -123,10 +123,13 @@ python -m pytest -q        # install ffmpeg, or the two video tests skip themsel
 python -m ruff check .
 ```
 
-Run it locally without Docker:
+Run it locally without Docker (the worker needs `ffmpeg` and `ffprobe` on the PATH and refuses to
+start without them; uvicorn listens on 8000, so the public URL has to say so or the embed snippets
+point at the wrong port):
 
 ```bash
 export MAXADS_BASE=/tmp/maxads MAXADS_REQUIRE_MOUNT=0 RUNTIME_DIRECTORY=/tmp/maxads-run
+export MAXADS_PUBLIC_URL=http://localhost:8000
 uvicorn app.main:create_app --factory --reload &
 python -m app.worker
 ```
@@ -139,6 +142,11 @@ guard.
 Built in September 2026 and deployed on a single small host since then.
 Feature-complete for its purpose; open ideas are in the
 [issues](https://github.com/Juice-de-Orange/maxads/issues).
+
+Checked on a fresh clone with the Docker quick start and a real browser (upload, conversion,
+delivery, embed on another origin, statistics, pause, delete, restart). Not verified in that check:
+the systemd installation from `docs/deploy/`, operation behind a reverse proxy with TLS, and browsers
+other than Chromium. There is no built-in backup; back up the data volume.
 
 ## Built with Claude Code
 

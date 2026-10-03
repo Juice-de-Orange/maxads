@@ -365,8 +365,9 @@ def register_routes(app: FastAPI) -> None:
             ad = ad_by_slug(conn, slug)
             if ad is None:
                 raise HTTPException(404)
-            record_event(request, conn, ad["id"], "click")
             target = ad["target_url"]
+            if target:
+                record_event(request, conn, ad["id"], "click")
         if not target:
             return PlainTextResponse("No target URL set for this ad.", status_code=404)
         return RedirectResponse(target, status_code=302)

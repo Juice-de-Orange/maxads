@@ -170,16 +170,18 @@
         {% elif ad.status == 'failed' %}
           <span class="text-xs font-black p-3 text-center" style="color:var(--pop)">💥 Failed</span>
         {% else %}
-          <span class="text-xs font-black p-3 text-center">⏳ in the oven…</span>
+          <span class="text-xs font-black p-3 text-center">⏳ in the oven…<br>
+            <a href="" class="underline">reload to check</a></span>
         {% endif %}
       </div>
 
       <div class="space-y-2 min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-lg font-black">{{ ad.title }}</h3>
+          {% set on_air = ad.active and ad.status == 'ready' %}
           <span class="badge text-xs"
-                style="background:{{ 'var(--lime)' if ad.active else '#e7e1d3' }}">
-            {{ 'on air' if ad.active else 'paused' }}
+                style="background:{{ 'var(--lime)' if on_air else '#e7e1d3' }}">
+            {{ 'on air' if on_air else ('paused' if not ad.active else 'not delivered') }}
           </span>
           <span class="text-xs font-bold" style="color:var(--ink-soft)">
             {{ ad.kind }}{% if ad.width %} · {{ ad.width }}×{{ ad.height }}{% endif %}
@@ -249,8 +251,10 @@
               {{ '⏸ Pause' if ad.active else '▶ Go' }}
             </button>
           </form>
-          <form method="post" action="/ads/{{ ad.slug }}/delete"
-                onsubmit="return confirm('Really bin the banner “{{ ad.title }}”?')">
+          {# The title travels as data, never inside the script text: there HTML escaping
+             would not stop an apostrophe from ending the string. #}
+          <form method="post" action="/ads/{{ ad.slug }}/delete" data-title="{{ ad.title }}"
+                onsubmit="return confirm('Really bin the banner “' + this.dataset.title + '”?')">
             <button class="btn px-3 py-1.5 text-sm" style="background:var(--pop);color:#fff">🗑 Delete</button>
           </form>
         </div>
