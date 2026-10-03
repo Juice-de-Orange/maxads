@@ -43,6 +43,15 @@ Open <http://localhost:8080>, log in as `admin` with that password and choose a
 new one — MaxAds asks for it on the first login. To pick the first password
 yourself, set `MAXADS_ADMIN_PASSWORD` in `.env` before the first start.
 
+Port 8080 already taken? Set `MAXADS_PORT` in `.env` (e.g. `MAXADS_PORT=9090`)
+and the same port in `MAXADS_PUBLIC_URL`, then open that port instead.
+
+The generated password is only in the container log, and `docker compose down`
+removes that log. If it is gone before your first login, start over with
+`docker compose down -v` (this deletes the data volume, uploads included) and
+`docker compose up -d`: a new password is generated. `MAXADS_ADMIN_PASSWORD` is
+only read while no account exists, so setting it later does not reset anything.
+
 For a public setup, put the service behind a reverse proxy with TLS and set
 `MAXADS_PUBLIC_URL` (e.g. `https://ads.example.com`) — the embed snippets point
 there. Running it without Docker: [docs/deploy/systemd.md](docs/deploy/systemd.md).

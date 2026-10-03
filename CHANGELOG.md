@@ -18,3 +18,8 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - English user interface; environment variables are prefixed `MAXADS_`.
+- The host port of the Docker quick start is configurable with `MAXADS_PORT`.
+
+### Fixed
+
+- A failed dashboard login no longer writes the client IP address to the log.
