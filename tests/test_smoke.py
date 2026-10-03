@@ -105,6 +105,20 @@ def test_login_rejects_wrong_password(client):
     assert r.status_code == 401
 
 
+def test_failed_login_does_not_log_the_client_address(client, caplog):
+    """The service promises not to store IP addresses. The log files are storage
+    too, so a failed login records the username and nothing about the peer."""
+    import logging
+
+    with caplog.at_level(logging.INFO):
+        r = client.post("/login", data={"username": "someone", "password": "wrong"},
+                        headers={"x-forwarded-for": "203.0.113.77"})
+    assert r.status_code == 401
+    assert "failed login for 'someone'" in caplog.text
+    assert "203.0.113.77" not in caplog.text, "the forwarded client IP must not be logged"
+    assert "testclient" not in caplog.text, "the peer address must not be logged"
+
+
 def test_image_upload_creates_job(admin_client, app_env):
     from PIL import Image
     from app import db

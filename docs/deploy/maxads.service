@@ -1,26 +1,35 @@
-# Template -- adjust the paths marked below, then install to /etc/systemd/system/.
+# Template -- adapt the lines below each "# ADJUST:" comment, then install
+# to /etc/systemd/system/. Lines without that mark work as they are.
 # See docs/deploy/systemd.md.
 [Unit]
 Description=MaxAds web service
 Documentation=https://github.com/Juice-de-Orange/maxads
 After=network-online.target
 Wants=network-online.target
-# The data directory (MAXADS_BASE). If it is a separate disk, systemd waits for it.
+# ADJUST: the data directory (MAXADS_BASE). If it is a separate disk, systemd
+# waits for it.
 RequiresMountsFor=/srv/maxads
 
 [Service]
 Type=exec
+# ADJUST: the account the service runs as.
 User=maxads
 Group=maxads
+# ADJUST: the checkout of this repository.
 WorkingDirectory=/opt/maxads
 Environment=PYTHONUNBUFFERED=1
+# ADJUST: the data directory.
 Environment=MAXADS_BASE=/srv/maxads
+# ADJUST: the environment file (see .env.example).
 EnvironmentFile=-/etc/maxads.env
 # Refuse to start when the data disk is gone. Without this the service would
 # happily write into an empty directory on the system disk and lose every upload.
+# ADJUST: the data directory (MAXADS_BASE).
 ExecStartPre=/usr/bin/test -f /srv/maxads/.mounted
 # --no-access-log: the reverse proxy already logs every request. A second line
 # per banner request only costs writes and says nothing new.
+# ADJUST: the venv path; --host, --port and --forwarded-allow-ips if the reverse
+# proxy runs on another machine.
 ExecStart=/opt/maxads/venv/bin/uvicorn app.main:create_app --factory \
           --host 127.0.0.1 --port 8080 --proxy-headers --forwarded-allow-ips='127.0.0.1' \
           --no-access-log --timeout-keep-alive 15
@@ -49,6 +58,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
+# ADJUST: the data directory (MAXADS_BASE).
 ReadWritePaths=/srv/maxads
 ProtectKernelTunables=true
 ProtectControlGroups=true

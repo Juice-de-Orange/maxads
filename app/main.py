@@ -208,7 +208,9 @@ def register_routes(app: FastAPI) -> None:
         with db.session() as conn:
             user = auth.authenticate(conn, username, password)
         if user is None:
-            log.warning("failed login for %r from %s", username, client_ip(request))
+            # Without the client address on purpose: the log files are storage
+            # too, and the service promises not to keep IP addresses.
+            log.warning("failed login for %r", username)
             return templates.TemplateResponse(
                 request, "login.html", {"error": "Wrong username or password."},
                 status_code=401,

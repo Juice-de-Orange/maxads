@@ -1,12 +1,13 @@
 # Quick start: cp .env.example .env && docker compose up -d
 # Then open http://localhost:8080 and log in as "admin" (see README).
+# Another host port: set MAXADS_PORT (and MAXADS_PUBLIC_URL to match) in .env.
 services:
   web:
     build: .
     image: maxads:local
     env_file: .env
     ports:
-      - "8080:8080"
+      - "${MAXADS_PORT:-8080}:8080"
     volumes:
       - data:/data
       - runtime:/run/maxads

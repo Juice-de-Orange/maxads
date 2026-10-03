@@ -1,20 +1,28 @@
-# Template -- adjust the paths marked below, then install to /etc/systemd/system/.
+# Template -- adapt the lines below each "# ADJUST:" comment, then install
+# to /etc/systemd/system/. Lines without that mark work as they are.
 # See docs/deploy/systemd.md.
 [Unit]
 Description=MaxAds media worker (image and video optimisation)
 Documentation=https://github.com/Juice-de-Orange/maxads
 After=maxads.service
+# ADJUST: the data directory (MAXADS_BASE).
 RequiresMountsFor=/srv/maxads
 
 [Service]
 Type=exec
+# ADJUST: the account the service runs as.
 User=maxads
 Group=maxads
+# ADJUST: the checkout of this repository.
 WorkingDirectory=/opt/maxads
 Environment=PYTHONUNBUFFERED=1
+# ADJUST: the data directory.
 Environment=MAXADS_BASE=/srv/maxads
+# ADJUST: the environment file (see .env.example).
 EnvironmentFile=-/etc/maxads.env
+# ADJUST: the data directory (MAXADS_BASE).
 ExecStartPre=/usr/bin/test -f /srv/maxads/.mounted
+# ADJUST: the venv path.
 ExecStart=/opt/maxads/venv/bin/python -m app.worker
 Restart=on-failure
 RestartSec=5
@@ -42,6 +50,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
+# ADJUST: the data directory (MAXADS_BASE).
 ReadWritePaths=/srv/maxads
 RestrictSUIDSGID=true
 
