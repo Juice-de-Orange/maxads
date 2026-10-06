@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-06
+
 ### Added
 
 - First public release: banner upload with WebP/H.264 optimisation in a separate
@@ -23,3 +25,9 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 - A failed dashboard login no longer writes the client IP address to the log.
+- A banner title can no longer inject script into the delete confirmation; an
+  apostrophe in the title used to skip the confirmation (#10).
+- A click on a banner without a target URL is no longer counted; a failed or
+  converting banner no longer shows "on air" (#10).
+- Dashboard form errors (file type, size, password length, duplicate user) show
+  on the dashboard instead of as raw JSON (#12).
